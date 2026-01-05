@@ -83,17 +83,43 @@ const Checkout = () => {
           delivery_phone: formData.phone,
           delivery_notes: formData.notes || null,
           payment_method: paymentMethod,
-          payment_status: paymentMethod === "cod" ? "pending" : "pending",
-          status: "confirmed",
+          payment_status: "pending",
+          status: paymentMethod === "cod" ? "confirmed" : "pending",
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Clear cart
-      await clearCart();
+      if (paymentMethod === "online") {
+        // Process Stripe payment
+        const paymentItems = items.map(item => ({
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image,
+        }));
 
+        const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
+          body: {
+            items: paymentItems,
+            orderId: order.id,
+            deliveryAddress: formData.address,
+            deliveryPhone: formData.phone,
+          },
+        });
+
+        if (fnError) throw fnError;
+
+        if (data?.url) {
+          await clearCart();
+          window.location.href = data.url;
+          return;
+        }
+      }
+
+      // COD - clear cart and redirect
+      await clearCart();
       toast.success("Order placed successfully!");
       navigate("/dashboard");
     } catch (error: any) {

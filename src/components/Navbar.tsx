@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Phone, MessageCircle, Search, Calendar } from "lucide-react";
+import { Menu, X, Phone, MessageCircle, Search, Calendar, ShoppingCart, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SearchModal from "@/components/SearchModal";
 import AppointmentModal from "@/components/AppointmentModal";
+import NotificationDropdown from "@/components/NotificationDropdown";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
+import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/logo.jpeg";
 
 const Navbar = () => {
@@ -11,12 +15,15 @@ const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
+  const { itemCount } = useCart();
 
   const navLinks = [
     { name: "Home", path: "/" },
+    { name: "Shop", path: "/shop" },
     { name: "Doctors", path: "/doctors" },
+    { name: "Lab Tests", path: "/lab-tests" },
     { name: "Services", path: "/services" },
-    { name: "Contact", path: "/contact" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -60,15 +67,39 @@ const Navbar = () => {
               >
                 <Search className="h-5 w-5" />
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => setIsAppointmentOpen(true)}
-              >
-                <Calendar className="h-4 w-4" />
-                Book Appointment
-              </Button>
+              
+              <Link to="/cart" className="relative">
+                <Button variant="ghost" size="icon">
+                  <ShoppingCart className="h-5 w-5" />
+                  {itemCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    >
+                      {itemCount > 9 ? "9+" : itemCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+
+              {user && <NotificationDropdown />}
+              
+              {user ? (
+                <Link to="/dashboard">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <User className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/auth">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <User className="h-4 w-4" />
+                    Login
+                  </Button>
+                </Link>
+              )}
+              
               <a
                 href="https://wa.me/917427915869?text=Hello, I want to inquire about medicine availability"
                 target="_blank"
