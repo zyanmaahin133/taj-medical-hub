@@ -196,11 +196,23 @@ const Shop = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filteredProducts.map((product) => {
                   const mrp = getMrp(product.price, product.discount_percent || 0);
+                  const isUrl = product.image_url?.startsWith("http");
                   return (
                     <Card key={product.id} className="group overflow-hidden hover:shadow-lg transition-all">
                       <CardContent className="p-0">
                         <div className="relative p-4 bg-muted/30">
-                          <div className="text-5xl text-center py-4">{product.image_url || "💊"}</div>
+                          {isUrl ? (
+                            <img 
+                              src={product.image_url} 
+                              alt={product.name}
+                              className="w-full h-32 object-contain mx-auto"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={`text-5xl text-center py-4 ${isUrl ? 'hidden' : ''}`}>💊</div>
                           {product.requires_prescription && (
                             <Badge className="absolute top-2 left-2 bg-orange-500">Rx</Badge>
                           )}

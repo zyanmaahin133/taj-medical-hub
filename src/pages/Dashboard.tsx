@@ -4,21 +4,29 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserOrders, useUserAppointments, useUserLabBookings } from "@/hooks/useProducts";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import OrderTracking from "@/components/OrderTracking";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   User, Package, Calendar, TestTube, Scan, FileText, 
   Bell, Settings, LogOut, Clock, CheckCircle2, XCircle,
-  ShoppingBag, Stethoscope, ArrowRight
+  ShoppingBag, Stethoscope, ArrowRight, Eye
 } from "lucide-react";
 import { format } from "date-fns";
 
 const Dashboard = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
   
   const { data: orders = [], isLoading: ordersLoading } = useUserOrders(user?.id);
   const { data: appointments = [], isLoading: appointmentsLoading } = useUserAppointments(user?.id);
@@ -275,7 +283,7 @@ const Dashboard = () => {
                   ) : (
                     <div className="space-y-4">
                       {orders.map((order: any) => (
-                        <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
                               <Package className="h-6 w-6 text-muted-foreground" />
@@ -287,9 +295,15 @@ const Dashboard = () => {
                               </p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold">₹{order.total}</p>
-                            {getStatusBadge(order.status || "pending")}
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="font-bold">₹{order.total}</p>
+                              {getStatusBadge(order.status || "pending")}
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              Track
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -418,6 +432,45 @@ const Dashboard = () => {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Order Tracking Dialog */}
+          <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Order #{selectedOrder?.id.slice(0, 8)}</DialogTitle>
+              </DialogHeader>
+              {selectedOrder && (
+                <div className="space-y-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Order Date</span>
+                    <span>{format(new Date(selectedOrder.created_at), "PPP")}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total Amount</span>
+                    <span className="font-bold">₹{selectedOrder.total}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Payment</span>
+                    <Badge variant="outline">{selectedOrder.payment_status || "pending"}</Badge>
+                  </div>
+                  
+                  <div className="border-t pt-4">
+                    <p className="font-medium mb-2">Order Tracking</p>
+                    <OrderTracking 
+                      status={selectedOrder.status || "pending"} 
+                      createdAt={selectedOrder.created_at}
+                      expectedDelivery={selectedOrder.expected_delivery}
+                    />
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="font-medium mb-2">Delivery Address</p>
+                    <p className="text-sm text-muted-foreground">{selectedOrder.delivery_address || "N/A"}</p>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </main>
 
