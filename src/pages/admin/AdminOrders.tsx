@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -18,46 +20,94 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, Eye, Package, Download } from "lucide-react";
-
-const mockOrders = [
-  { id: "ORD001", customer: "John Doe", email: "john@example.com", items: 3, total: 760, status: "delivered", date: "2026-01-03", payment: "paid" },
-  { id: "ORD002", customer: "Jane Smith", email: "jane@example.com", items: 2, total: 450, status: "shipped", date: "2026-01-02", payment: "paid" },
-  { id: "ORD003", customer: "Amit Kumar", email: "amit@example.com", items: 5, total: 1250, status: "processing", date: "2026-01-01", payment: "paid" },
-  { id: "ORD004", customer: "Priya Sharma", email: "priya@example.com", items: 1, total: 890, status: "pending", date: "2025-12-31", payment: "pending" },
-  { id: "ORD005", customer: "Rahul Singh", email: "rahul@example.com", items: 4, total: 1560, status: "cancelled", date: "2025-12-30", payment: "refunded" },
-];
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Search, Eye, Download, Package, Truck, CheckCircle, XCircle, Clock } from "lucide-react";
+import { format } from "date-fns";
+import { toast } from "sonner";
 
 const AdminOrders = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const queryClient = useQueryClient();
+
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ["admin-orders"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*, profiles:user_id(full_name, email, phone)")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const updateOrderStatus = useMutation({
+    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) => {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: status as any })
+        .eq("id", orderId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      toast.success("Order status updated");
+    },
+    onError: () => {
+      toast.error("Failed to update order");
+    },
+  });
 
   const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      delivered: "bg-green-500",
-      shipped: "bg-blue-500",
-      processing: "bg-orange-500",
-      pending: "bg-yellow-500",
-      cancelled: "bg-red-500",
+    const config: Record<string, { color: string; icon: any }> = {
+      delivered: { color: "bg-green-500", icon: CheckCircle },
+      shipped: { color: "bg-blue-500", icon: Truck },
+      processing: { color: "bg-orange-500", icon: Package },
+      confirmed: { color: "bg-cyan-500", icon: Clock },
+      pending: { color: "bg-yellow-500", icon: Clock },
+      cancelled: { color: "bg-red-500", icon: XCircle },
     };
-    return <Badge className={colors[status]}>{status}</Badge>;
+    const { color, icon: Icon } = config[status] || config.pending;
+    return (
+      <Badge className={color}>
+        <Icon className="h-3 w-3 mr-1" />
+        {status}
+      </Badge>
+    );
   };
 
   const getPaymentBadge = (payment: string) => {
     const colors: Record<string, string> = {
-      paid: "bg-green-100 text-green-700",
+      completed: "bg-green-100 text-green-700",
       pending: "bg-yellow-100 text-yellow-700",
-      refunded: "bg-red-100 text-red-700",
+      failed: "bg-red-100 text-red-700",
+      refunded: "bg-gray-100 text-gray-700",
     };
-    return <Badge variant="outline" className={colors[payment]}>{payment}</Badge>;
+    return <Badge variant="outline" className={colors[payment] || colors.pending}>{payment}</Badge>;
   };
 
-  const filteredOrders = mockOrders.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredOrders = orders.filter((order: any) => {
+    const matchesSearch = 
+      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const getOrderItems = (items: any) => {
+    if (Array.isArray(items)) return items;
+    return [];
+  };
 
   return (
     <div className="space-y-6">
@@ -78,7 +128,7 @@ const AdminOrders = () => {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search orders..."
+                placeholder="Search by order ID, customer name or email..."
                 className="pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -91,6 +141,7 @@ const AdminOrders = () => {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
                 <SelectItem value="shipped">Shipped</SelectItem>
                 <SelectItem value="delivered">Delivered</SelectItem>
@@ -100,45 +151,122 @@ const AdminOrders = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOrders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{order.customer}</p>
-                      <p className="text-sm text-muted-foreground">{order.email}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{order.items}</TableCell>
-                  <TableCell className="font-semibold">₹{order.total}</TableCell>
-                  <TableCell>{getStatusBadge(order.status)}</TableCell>
-                  <TableCell>{getPaymentBadge(order.payment)}</TableCell>
-                  <TableCell>{order.date}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+          {isLoading ? (
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-16 bg-muted animate-pulse rounded"></div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order ID</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No orders found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredOrders.map((order: any) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium font-mono text-sm">
+                        #{order.id.slice(0, 8)}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{order.profiles?.full_name || "Guest"}</p>
+                          <p className="text-sm text-muted-foreground">{order.profiles?.email}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getOrderItems(order.items).length}</TableCell>
+                      <TableCell className="font-semibold">₹{order.total}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={order.status || "pending"}
+                          onValueChange={(value) => updateOrderStatus.mutate({ orderId: order.id, status: value })}
+                        >
+                          <SelectTrigger className="w-32 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="confirmed">Confirmed</SelectItem>
+                            <SelectItem value="processing">Processing</SelectItem>
+                            <SelectItem value="shipped">Shipped</SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>{getPaymentBadge(order.payment_status || "pending")}</TableCell>
+                      <TableCell>{format(new Date(order.created_at), "PP")}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(order)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
+
+      {/* Order Details Modal */}
+      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Order Details #{selectedOrder?.id.slice(0, 8)}</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Customer</p>
+                  <p className="font-medium">{selectedOrder.profiles?.full_name || "Guest"}</p>
+                  <p className="text-sm">{selectedOrder.profiles?.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Delivery Address</p>
+                  <p className="font-medium">{selectedOrder.delivery_address || "N/A"}</p>
+                  <p className="text-sm">{selectedOrder.delivery_phone}</p>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Order Items</p>
+                <div className="space-y-2">
+                  {getOrderItems(selectedOrder.items).map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between p-2 bg-muted/50 rounded">
+                      <span>{item.name} × {item.quantity}</span>
+                      <span className="font-medium">₹{item.price * item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-between pt-4 border-t">
+                <span className="font-bold">Total</span>
+                <span className="font-bold text-lg">₹{selectedOrder.total}</span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
