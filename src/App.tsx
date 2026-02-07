@@ -28,6 +28,10 @@ import AdminDoctors from "./pages/admin/AdminDoctors";
 import AdminLabTests from "./pages/admin/AdminLabTests";
 import AdminScans from "./pages/admin/AdminScans";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminAdvertisements from "./pages/admin/AdminAdvertisements";
+import AdminWholesale from "./pages/admin/AdminWholesale";
+import WholesaleRegister from "./pages/wholesale/WholesaleRegister";
+import WholesaleDashboard from "./pages/wholesale/WholesaleDashboard";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +58,10 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/upload-prescription" element={<UploadPrescription />} />
               
+              {/* Wholesale Routes */}
+              <Route path="/wholesale/register" element={<WholesaleRegister />} />
+              <Route path="/wholesale" element={<WholesaleDashboard />} />
+              
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
@@ -63,6 +71,8 @@ const App = () => (
                 <Route path="lab-tests" element={<AdminLabTests />} />
                 <Route path="scans" element={<AdminScans />} />
                 <Route path="users" element={<AdminUsers />} />
+                <Route path="advertisements" element={<AdminAdvertisements />} />
+                <Route path="wholesale" element={<AdminWholesale />} />
               </Route>
               
               <Route path="*" element={<NotFound />} />

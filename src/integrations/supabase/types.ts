@@ -35,6 +35,57 @@ export type Database = {
         }
         Relationships: []
       }
+      advertisements: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          link_id: string | null
+          link_type: string | null
+          link_url: string | null
+          position: string | null
+          priority: number | null
+          start_date: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_id?: string | null
+          link_type?: string | null
+          link_url?: string | null
+          position?: string | null
+          priority?: number | null
+          start_date?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_id?: string | null
+          link_type?: string | null
+          link_url?: string | null
+          position?: string | null
+          priority?: number | null
+          start_date?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           appointment_date: string
@@ -275,6 +326,97 @@ export type Database = {
         }
         Relationships: []
       }
+      invoices: {
+        Row: {
+          created_at: string | null
+          customer_address: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          discount: number | null
+          id: string
+          invoice_number: string
+          invoice_type: string
+          items: Json
+          lab_booking_id: string | null
+          order_id: string | null
+          payment_method: string | null
+          payment_status: string | null
+          pdf_url: string | null
+          scan_booking_id: string | null
+          subtotal: number
+          tax_amount: number | null
+          total: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          discount?: number | null
+          id?: string
+          invoice_number: string
+          invoice_type: string
+          items: Json
+          lab_booking_id?: string | null
+          order_id?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          pdf_url?: string | null
+          scan_booking_id?: string | null
+          subtotal: number
+          tax_amount?: number | null
+          total: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          discount?: number | null
+          id?: string
+          invoice_number?: string
+          invoice_type?: string
+          items?: Json
+          lab_booking_id?: string | null
+          order_id?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          pdf_url?: string | null
+          scan_booking_id?: string | null
+          subtotal?: number
+          tax_amount?: number | null
+          total?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_lab_booking_id_fkey"
+            columns: ["lab_booking_id"]
+            isOneToOne: false
+            referencedRelation: "lab_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_scan_booking_id_fkey"
+            columns: ["scan_booking_id"]
+            isOneToOne: false
+            referencedRelation: "scan_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_bookings: {
         Row: {
           amount: number
@@ -509,6 +651,51 @@ export type Database = {
           },
         ]
       }
+      notification_logs: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          notification_type: string
+          recipient: string
+          reference_id: string | null
+          reference_type: string | null
+          status: string | null
+          subject: string | null
+          template: string
+          user_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          notification_type: string
+          recipient: string
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string | null
+          subject?: string | null
+          template: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          notification_type?: string
+          recipient?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string | null
+          subject?: string | null
+          template?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -609,6 +796,62 @@ export type Database = {
             columns: ["prescription_id"]
             isOneToOne: false
             referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          gateway: string
+          gateway_order_id: string | null
+          gateway_transaction_id: string | null
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          payment_method: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string | null
+          gateway: string
+          gateway_order_id?: string | null
+          gateway_transaction_id?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          gateway?: string
+          gateway_order_id?: string | null
+          gateway_transaction_id?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -741,6 +984,59 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      quote_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          items: Json
+          notes: string | null
+          pdf_url: string | null
+          quoted_amount: number | null
+          quoted_items: Json | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          valid_until: string | null
+          wholesale_profile_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          items: Json
+          notes?: string | null
+          pdf_url?: string | null
+          quoted_amount?: number | null
+          quoted_items?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          valid_until?: string | null
+          wholesale_profile_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          pdf_url?: string | null
+          quoted_amount?: number | null
+          quoted_items?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          valid_until?: string | null
+          wholesale_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_requests_wholesale_profile_id_fkey"
+            columns: ["wholesale_profile_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviews: {
         Row: {
@@ -950,6 +1246,78 @@ export type Database = {
         }
         Relationships: []
       }
+      wholesale_profiles: {
+        Row: {
+          business_address: string | null
+          business_city: string | null
+          business_name: string
+          business_pincode: string | null
+          business_state: string | null
+          business_type: string | null
+          contact_person: string | null
+          created_at: string | null
+          credit_limit: number | null
+          credit_used: number | null
+          discount_percentage: number | null
+          drug_license_number: string | null
+          email: string | null
+          gst_number: string | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          pan_number: string | null
+          phone: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_city?: string | null
+          business_name: string
+          business_pincode?: string | null
+          business_state?: string | null
+          business_type?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          credit_limit?: number | null
+          credit_used?: number | null
+          discount_percentage?: number | null
+          drug_license_number?: string | null
+          email?: string | null
+          gst_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          pan_number?: string | null
+          phone?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          business_address?: string | null
+          business_city?: string | null
+          business_name?: string
+          business_pincode?: string | null
+          business_state?: string | null
+          business_type?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          credit_limit?: number | null
+          credit_used?: number | null
+          discount_percentage?: number | null
+          drug_license_number?: string | null
+          email?: string | null
+          gst_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          pan_number?: string | null
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -964,7 +1332,14 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "doctor" | "pharmacy" | "lab" | "scan_center" | "user"
+      app_role:
+        | "admin"
+        | "doctor"
+        | "pharmacy"
+        | "lab"
+        | "scan_center"
+        | "user"
+        | "wholesale"
       booking_status:
         | "pending"
         | "confirmed"
@@ -1108,7 +1483,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "doctor", "pharmacy", "lab", "scan_center", "user"],
+      app_role: [
+        "admin",
+        "doctor",
+        "pharmacy",
+        "lab",
+        "scan_center",
+        "user",
+        "wholesale",
+      ],
       booking_status: [
         "pending",
         "confirmed",
