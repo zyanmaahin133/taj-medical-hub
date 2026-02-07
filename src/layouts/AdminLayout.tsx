@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, Package, Users, Stethoscope, TestTube, 
   Scan, ShoppingCart, FileText, Settings, LogOut, Menu,
-  ChevronRight, Bell, Search
+  Bell, Search, Megaphone, Store
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -19,16 +20,18 @@ const sidebarItems = [
   { name: "Lab Tests", path: "/admin/lab-tests", icon: TestTube },
   { name: "Scans", path: "/admin/scans", icon: Scan },
   { name: "Users", path: "/admin/users", icon: Users },
-  { name: "Prescriptions", path: "/admin/prescriptions", icon: FileText },
+  { name: "Wholesale", path: "/admin/wholesale", icon: Store },
+  { name: "Advertisements", path: "/admin/advertisements", icon: Megaphone },
   { name: "Settings", path: "/admin/settings", icon: Settings },
 ];
 
 const AdminLayout = () => {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  if (loading) {
+  if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -38,6 +41,11 @@ const AdminLayout = () => {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Check if user is admin
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
   }
 
   return (
@@ -68,7 +76,7 @@ const AdminLayout = () => {
                   to={item.path}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                     isActive 
-                      ? 'bg-primary text-white' 
+                      ? 'bg-primary text-primary-foreground' 
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
                 >
@@ -81,6 +89,10 @@ const AdminLayout = () => {
 
           {/* Footer */}
           <div className="p-4 border-t">
+            <Link to="/" className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors mb-2">
+              <Package className="h-5 w-5" />
+              {sidebarOpen && <span className="text-sm font-medium">View Store</span>}
+            </Link>
             <button
               onClick={signOut}
               className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
@@ -116,7 +128,7 @@ const AdminLayout = () => {
               </button>
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary text-white text-sm">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                     {user.email?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>

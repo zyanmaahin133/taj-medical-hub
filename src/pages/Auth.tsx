@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Phone, Building, Store } from "lucide-react";
 import logo from "@/assets/logo.jpeg";
 
 const loginSchema = z.object({
@@ -21,24 +22,57 @@ const signupSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
   phone: z.string().trim().min(10, "Phone must be at least 10 digits").max(15),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  accountType: z.enum(["customer", "wholesale"]),
 });
 
 const Auth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
+  const defaultTab = location.state?.tab || "login";
+  const defaultAccountType = location.state?.accountType || "customer";
+  
   const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [signupData, setSignupData] = useState({ fullName: "", email: "", phone: "", password: "" });
+  const [signupData, setSignupData] = useState({ 
+    fullName: "", 
+    email: "", 
+    phone: "", 
+    password: "",
+    accountType: defaultAccountType as "customer" | "wholesale"
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/");
+        redirectBasedOnRole(session.user.id);
       }
     });
   }, [navigate]);
+
+  const redirectBasedOnRole = async (userId: string) => {
+    try {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .single();
+      
+      const role = roleData?.role;
+      
+      if (role === "admin") {
+        navigate("/admin");
+      } else if (role === "wholesale") {
+        navigate("/wholesale");
+      } else {
+        navigate("/");
+      }
+    } catch (error) {
+      navigate("/");
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +89,7 @@ const Auth = () => {
     }
 
     setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: loginData.email,
       password: loginData.password,
     });
@@ -64,7 +98,7 @@ const Auth = () => {
       toast.error(error.message);
     } else {
       toast.success("Welcome back!");
-      navigate("/");
+      redirectBasedOnRole(data.user.id);
     }
     setIsLoading(false);
   };
@@ -84,7 +118,7 @@ const Auth = () => {
     }
 
     setIsLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: signupData.email,
       password: signupData.password,
       options: {
@@ -92,6 +126,7 @@ const Auth = () => {
         data: {
           full_name: signupData.fullName,
           phone: signupData.phone,
+          account_type: signupData.accountType,
         },
       },
     });
@@ -103,8 +138,14 @@ const Auth = () => {
         toast.error(error.message);
       }
     } else {
-      toast.success("Account created successfully! Welcome to Taj Medical Store.");
-      navigate("/");
+      // If wholesale, redirect to wholesale registration
+      if (signupData.accountType === "wholesale" && data.user) {
+        toast.success("Account created! Please complete your business profile.");
+        navigate("/wholesale/register");
+      } else {
+        toast.success("Account created successfully! Welcome to Taj Medical Store.");
+        navigate("/");
+      }
     }
     setIsLoading(false);
   };
@@ -122,7 +163,7 @@ const Auth = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -177,8 +218,47 @@ const Auth = () => {
 
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4 mt-4">
+                {/* Account Type Selection */}
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
+                  <Label>Account Type</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      className={`flex items-center gap-2 p-3 border rounded-lg transition-colors ${
+                        signupData.accountType === "customer"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                      onClick={() => setSignupData({ ...signupData, accountType: "customer" })}
+                    >
+                      <User className="h-5 w-5" />
+                      <div className="text-left">
+                        <p className="font-medium text-sm">Customer</p>
+                        <p className="text-xs text-muted-foreground">Personal use</p>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className={`flex items-center gap-2 p-3 border rounded-lg transition-colors ${
+                        signupData.accountType === "wholesale"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                      onClick={() => setSignupData({ ...signupData, accountType: "wholesale" })}
+                    >
+                      <Store className="h-5 w-5" />
+                      <div className="text-left">
+                        <p className="font-medium text-sm">Wholesale</p>
+                        <p className="text-xs text-muted-foreground">Business/Shop</p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-name">
+                    {signupData.accountType === "wholesale" ? "Contact Person Name" : "Full Name"}
+                  </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -249,6 +329,12 @@ const Auth = () => {
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Creating account..." : "Create Account"}
                 </Button>
+
+                {signupData.accountType === "wholesale" && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    By registering as wholesale, you'll need to complete business verification.
+                  </p>
+                )}
               </form>
             </TabsContent>
           </Tabs>

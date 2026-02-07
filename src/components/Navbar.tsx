@@ -1,22 +1,24 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Phone, MessageCircle, Search, Calendar, ShoppingCart, User } from "lucide-react";
+import { Menu, X, Phone, MessageCircle, Search, ShoppingCart, User, ChevronDown, Grid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SearchModal from "@/components/SearchModal";
-import AppointmentModal from "@/components/AppointmentModal";
 import NotificationDropdown from "@/components/NotificationDropdown";
+import MegaMenu from "@/components/MegaMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/logo.jpeg";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const location = useLocation();
   const { user } = useAuth();
   const { itemCount } = useCart();
+  const { isAdmin, isWholesale } = useUserRole();
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -28,6 +30,18 @@ const Navbar = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const getDashboardLink = () => {
+    if (isAdmin) return "/admin";
+    if (isWholesale) return "/wholesale";
+    return "/profile";
+  };
+
+  const getDashboardLabel = () => {
+    if (isAdmin) return "Admin Panel";
+    if (isWholesale) return "Business Dashboard";
+    return "My Account";
+  };
 
   return (
     <>
@@ -44,7 +58,17 @@ const Navbar = () => {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-6">
+              {/* Categories Button */}
+              <button
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors"
+                onMouseEnter={() => setIsMegaMenuOpen(true)}
+              >
+                <Grid className="h-4 w-4" />
+                Categories
+                <ChevronDown className="h-4 w-4" />
+              </button>
+
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
@@ -86,10 +110,10 @@ const Navbar = () => {
               {user && <NotificationDropdown />}
               
               {user ? (
-                <Link to="/profile">
+                <Link to={getDashboardLink()}>
                   <Button variant="outline" size="sm" className="gap-2">
                     <User className="h-4 w-4" />
-                    My Account
+                    {getDashboardLabel()}
                   </Button>
                 </Link>
               ) : (
@@ -114,7 +138,7 @@ const Navbar = () => {
             </div>
 
             {/* Mobile Actions */}
-            <div className="flex md:hidden items-center gap-2">
+            <div className="flex lg:hidden items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
@@ -122,6 +146,19 @@ const Navbar = () => {
               >
                 <Search className="h-5 w-5" />
               </Button>
+              <Link to="/cart" className="relative">
+                <Button variant="ghost" size="icon">
+                  <ShoppingCart className="h-5 w-5" />
+                  {itemCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    >
+                      {itemCount > 9 ? "9+" : itemCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
               <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="p-2 text-foreground"
@@ -132,10 +169,13 @@ const Navbar = () => {
             </div>
           </div>
 
+          {/* Mega Menu */}
+          <MegaMenu isOpen={isMegaMenuOpen} onClose={() => setIsMegaMenuOpen(false)} />
+
           {/* Mobile Navigation */}
           {isOpen && (
-            <div className="md:hidden py-4 border-t border-border animate-fade-in">
-              <div className="flex flex-col gap-4">
+            <div className="lg:hidden py-4 border-t border-border animate-fade-in">
+              <div className="flex flex-col gap-2">
                 {navLinks.map((link) => (
                   <Link
                     key={link.path}
@@ -150,19 +190,24 @@ const Navbar = () => {
                     {link.name}
                   </Link>
                 ))}
+                
                 <div className="flex flex-col gap-2 px-4 pt-4 border-t border-border">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2"
-                    onClick={() => {
-                      setIsOpen(false);
-                      setIsAppointmentOpen(true);
-                    }}
-                  >
-                    <Calendar className="h-4 w-4" />
-                    Book Appointment
-                  </Button>
+                  {user ? (
+                    <Link to={getDashboardLink()} onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" size="sm" className="w-full gap-2">
+                        <User className="h-4 w-4" />
+                        {getDashboardLabel()}
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link to="/auth" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" size="sm" className="w-full gap-2">
+                        <User className="h-4 w-4" />
+                        Login / Register
+                      </Button>
+                    </Link>
+                  )}
+                  
                   <div className="flex gap-2">
                     <a href="tel:+917427915869" className="flex-1">
                       <Button variant="outline" size="sm" className="w-full gap-2">
@@ -190,7 +235,6 @@ const Navbar = () => {
       </nav>
 
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-      <AppointmentModal isOpen={isAppointmentOpen} onClose={() => setIsAppointmentOpen(false)} />
     </>
   );
 };
