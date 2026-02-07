@@ -29,12 +29,22 @@ const resetSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
 });
 
+const newPasswordSchema = z.object({
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showNewPasswordForm, setShowNewPasswordForm] = useState(false);
+  const [newPasswordData, setNewPasswordData] = useState({ password: "", confirmPassword: "" });
   const [resetEmail, setResetEmail] = useState("");
   
   const defaultTab = location.state?.tab || "login";
@@ -189,9 +199,110 @@ const Auth = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("reset") === "true") {
-      toast.info("You can now set a new password in your account settings.");
+      // Check if user is logged in via magic link
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          setShowNewPasswordForm(true);
+        }
+      });
     }
   }, [location.search]);
+
+  const handleSetNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    const result = newPasswordSchema.safeParse(newPasswordData);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) fieldErrors[err.path[0].toString()] = err.message;
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await supabase.auth.updateUser({
+      password: newPasswordData.password,
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password updated successfully!");
+      setShowNewPasswordForm(false);
+      setNewPasswordData({ password: "", confirmPassword: "" });
+      // Clear the reset param from URL
+      navigate("/auth", { replace: true });
+    }
+    setIsLoading(false);
+  };
+
+  // New Password Form (shown after clicking reset link)
+  if (showNewPasswordForm) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardHeader className="text-center space-y-4">
+            <div className="flex justify-center">
+              <img src={logo} alt="Taj Medical Store" className="h-20 w-20 rounded-full object-cover shadow-lg" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-bold text-primary">Set New Password</CardTitle>
+              <CardDescription>Enter your new password below</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSetNewPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="new-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="pl-10 pr-10"
+                    value={newPasswordData.password}
+                    onChange={(e) => setNewPasswordData({ ...newPasswordData, password: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-3 text-muted-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="confirm-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="pl-10"
+                    value={newPasswordData.confirmPassword}
+                    onChange={(e) => setNewPasswordData({ ...newPasswordData, confirmPassword: e.target.value })}
+                  />
+                </div>
+                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Updating..." : "Update Password"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (showForgotPassword) {
     return (
