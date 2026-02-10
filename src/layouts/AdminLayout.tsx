@@ -13,26 +13,27 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import logo from "@/assets/logo.jpeg";
 
-const sidebarItems = [
-  { name: "Dashboard", path: "/admin", icon: LayoutDashboard },
-  { name: "Orders", path: "/admin/orders", icon: ShoppingCart },
-  { name: "Products", path: "/admin/products", icon: Package },
-  { name: "Doctors", path: "/admin/doctors", icon: Stethoscope },
-  { name: "Lab Tests", path: "/admin/lab-tests", icon: TestTube },
-  { name: "Scans", path: "/admin/scans", icon: Scan },
-  { name: "Users", path: "/admin/users", icon: Users },
-  { name: "Wholesale", path: "/admin/wholesale", icon: Store },
-  { name: "Advertisements", path: "/admin/advertisements", icon: Megaphone },
-  { name: "Settings", path: "/admin/settings", icon: Settings },
+const allSidebarItems = [
+  { name: "Dashboard", path: "/admin", icon: LayoutDashboard, adminOnly: false },
+  { name: "Orders", path: "/admin/orders", icon: ShoppingCart, adminOnly: false },
+  { name: "Products", path: "/admin/products", icon: Package, adminOnly: false },
+  { name: "Doctors", path: "/admin/doctors", icon: Stethoscope, adminOnly: false },
+  { name: "Lab Tests", path: "/admin/lab-tests", icon: TestTube, adminOnly: false },
+  { name: "Scans", path: "/admin/scans", icon: Scan, adminOnly: false },
+  { name: "Users", path: "/admin/users", icon: Users, adminOnly: true },
+  { name: "Wholesale", path: "/admin/wholesale", icon: Store, adminOnly: true },
+  { name: "Advertisements", path: "/admin/advertisements", icon: Megaphone, adminOnly: true },
+  { name: "Settings", path: "/admin/settings", icon: Settings, adminOnly: true },
 ];
 
-const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => {
+const SidebarContent = ({ isAdmin, onLinkClick }: { isAdmin: boolean, onLinkClick?: () => void }) => {
   const { signOut } = useAuth();
   const location = useLocation();
 
+  const sidebarItems = allSidebarItems.filter(item => !item.adminOnly || isAdmin);
+
   return (
     <div className="flex flex-col h-full bg-card">
-      {/* Logo */}
       <div className="p-4 border-b h-16 flex items-center">
         <Link to="/admin" className="flex items-center gap-3" onClick={onLinkClick}>
           <img src={logo} alt="Taj Medical" className="h-10 w-10 rounded-full object-cover" />
@@ -43,7 +44,6 @@ const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => {
         </Link>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {sidebarItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -65,7 +65,6 @@ const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => {
         })}
       </nav>
 
-      {/* Footer */}
       <div className="p-4 border-t">
         <Link to="/" className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors mb-2">
           <Package className="h-5 w-5" />
@@ -83,7 +82,6 @@ const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => {
   );
 };
 
-
 const AdminLayout = () => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: roleLoading } = useUserRole();
@@ -97,48 +95,33 @@ const AdminLayout = () => {
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
-  if (!isAdmin) return <Navigate to="/" replace />;
+  if (!user || !isAdmin) return <Navigate to="/auth" replace />;
 
   return (
     <div className="min-h-screen bg-muted/40">
-      {/* Mobile Sidebar */}
       {isMobileSidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-black/60"
-            onClick={() => setMobileSidebarOpen(false)}
-          ></div>
-          {/* Sidebar */}
+          <div className="fixed inset-0 bg-black/60" onClick={() => setMobileSidebarOpen(false)}></div>
           <div className="fixed top-0 left-0 bottom-0 w-64 bg-card border-r">
-            <SidebarContent onLinkClick={() => setMobileSidebarOpen(false)} />
+            <SidebarContent isAdmin={isAdmin} onLinkClick={() => setMobileSidebarOpen(false)} />
           </div>
         </div>
       )}
 
-      {/* Desktop Sidebar (always visible) */}
       <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-64 border-r">
-        <SidebarContent />
+        <SidebarContent isAdmin={isAdmin} />
       </aside>
 
-      {/* Main Content */}
       <div className="md:ml-64">
-        {/* Header */}
         <header className="sticky top-0 z-30 bg-card border-b px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setMobileSidebarOpen(true)}
-            >
+            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileSidebarOpen(true)}>
               <Menu className="h-5 w-5" />
             </Button>
-             <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search..." className="pl-9 w-64" />
-              </div>
+            <div className="relative hidden md:block">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search..." className="pl-9 w-64" />
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" className="relative">
@@ -155,7 +138,6 @@ const AdminLayout = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="p-4 sm:p-6">
           <Outlet />
         </main>
