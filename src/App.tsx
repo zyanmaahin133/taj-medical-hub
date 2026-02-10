@@ -20,6 +20,7 @@ import Checkout from "./pages/Checkout";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import UploadPrescription from "./pages/UploadPrescription";
+import UpdatePassword from "./pages/UpdatePassword";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
@@ -30,6 +31,7 @@ import AdminScans from "./pages/admin/AdminScans";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAdvertisements from "./pages/admin/AdminAdvertisements";
 import AdminWholesale from "./pages/admin/AdminWholesale";
+import AdminSettings from "./pages/admin/AdminSettings";
 import WholesaleRegister from "./pages/wholesale/WholesaleRegister";
 import WholesaleDashboard from "./pages/wholesale/WholesaleDashboard";
 
@@ -57,7 +59,8 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/upload-prescription" element={<UploadPrescription />} />
-              
+              <Route path="/update-password" element={<UpdatePassword />} />
+
               {/* Wholesale Routes */}
               <Route path="/wholesale/register" element={<WholesaleRegister />} />
               <Route path="/wholesale" element={<WholesaleDashboard />} />
@@ -73,6 +76,7 @@ const App = () => (
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="advertisements" element={<AdminAdvertisements />} />
                 <Route path="wholesale" element={<AdminWholesale />} />
+                <Route path="settings" element={<AdminSettings />} />
               </Route>
               
               <Route path="*" element={<NotFound />} />
