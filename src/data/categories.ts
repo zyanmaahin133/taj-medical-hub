@@ -1,4 +1,5 @@
-import { 
+
+import {
   ShoppingBag, Baby, Bath, Pill, Apple, Droplets, Home, Smile, Heart, 
   Package, Shirt, Dumbbell, Leaf, Beaker, Stethoscope, Scan, 
   Activity, Eye, Ear, Scissors, Sparkles, Hand, FlaskConical,
@@ -144,6 +145,7 @@ export const categoryGroups: CategoryGroup[] = [
 ];
 
 export const pharmacyCategories = [
+  { name: "Antibiotics & Antivirals", slug: "antibiotics", icon: ShieldCheck, color: "bg-red-600" },
   { name: "Gastrointestinal", slug: "gastrointestinal", icon: Activity, color: "bg-amber-500" },
   { name: "Cardiovascular", slug: "cardiovascular", icon: HeartPulse, color: "bg-red-500" },
   { name: "Respiratory", slug: "respiratory", icon: Wind, color: "bg-sky-500" },
