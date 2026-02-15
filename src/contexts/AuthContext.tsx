@@ -7,7 +7,6 @@ import { Loader2 } from "lucide-react";
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  loading: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -25,9 +24,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
       } catch (error) {
-        console.error("Error getting session:", error);
+        console.error("Error in getSession:", error);
       } finally {
-        setLoading(false); // Set loading to false only after the check is complete
+        setLoading(false); // This is the crucial part: set loading to false only after the check
       }
     };
 
@@ -47,14 +46,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
   };
 
-  const value = { user, session, loading, signOut };
+  const value = { user, session, signOut };
 
-  // CRITICAL FIX: Show a full-page loader while the session is being verified.
-  // This prevents the app from rendering a protected route with a stale session.
+  // This is the blocking loader. It prevents the app from rendering until the auth check is complete.
   if (loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' }}>
+        <Loader2 style={{ height: '2.5rem', width: '2.5rem', animation: 'spin 1s linear infinite' }} />
       </div>
     );
   }

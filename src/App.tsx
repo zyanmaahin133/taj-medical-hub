@@ -7,12 +7,13 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 
-// Page Imports
+// Import all pages
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import NotFound from "./pages/NotFound";
+// ... other page imports ...
 import Doctors from "./pages/Doctors";
 import Contact from "./pages/Contact";
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
 import Shop from "./pages/Shop";
 import LabTests from "./pages/LabTests";
 import ScanBooking from "./pages/ScanBooking";
@@ -21,15 +22,11 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Profile from "./pages/Profile";
 import UploadPrescription from "./pages/UploadPrescription";
-import UpdatePassword from "./pages/UpdatePassword";
-
-// Dashboard Imports
 import UserDashboard from "./pages/UserDashboard";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
-// Make sure all admin pages are imported
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminDoctors from "./pages/admin/AdminDoctors";
 import AdminLabTests from "./pages/admin/AdminLabTests";
@@ -42,9 +39,11 @@ import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
+// This is a wrapper to protect routes that require a user to be logged in.
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user } = useAuth();
   if (!user) {
+    // If no user, redirect to the login page.
     return <Navigate to="/auth" replace />;
   }
   return children;
@@ -52,6 +51,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    {/* CORRECTED: BrowserRouter now wraps AuthProvider */}
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
@@ -59,27 +59,25 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
-              {/* === Public Routes === */}
+              {/* Public Routes - Anyone can access these */}
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/doctors" element={<Doctors />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/shop" element={<Shop />} />
+              <Route path="/doctors" element={<Doctors />} />
               <Route path="/lab-tests" element={<LabTests />} />
               <Route path="/scan-booking" element={<ScanBooking />} />
               <Route path="/consult" element={<Consult />} />
 
-              {/* === Protected User Routes === */}
+              {/* Protected Routes - Only logged-in users can access */}
               <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
               <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
               <Route path="/upload-prescription" element={<ProtectedRoute><UploadPrescription /></ProtectedRoute>} />
 
-              {/* === Protected Doctor Routes === */}
+              {/* Role-Specific Protected Routes */}
               <Route path="/doctor/dashboard" element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>} />
-
-              {/* === Admin Routes === */}
               <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="orders" element={<AdminOrders />} />
