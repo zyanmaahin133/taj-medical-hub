@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { 
-  ShoppingCart, Users, Stethoscope, TestTube, TrendingUp, 
+import {
+  ShoppingCart, Users, Stethoscope, TestTube, TrendingUp,
   TrendingDown, DollarSign, Package, Calendar, Clock, FileText,
   Store, Megaphone
 } from "lucide-react";

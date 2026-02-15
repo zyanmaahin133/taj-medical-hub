@@ -6,12 +6,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { Loader2 } from "lucide-react";
 
-// Import all pages
+// Page Imports
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-// ... other page imports ...
+// ... other imports ...
 import Doctors from "./pages/Doctors";
 import Contact from "./pages/Contact";
 import Shop from "./pages/Shop";
@@ -35,64 +35,75 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAdvertisements from "./pages/admin/AdminAdvertisements";
 import AdminWholesale from "./pages/admin/AdminWholesale";
 import AdminSettings from "./pages/admin/AdminSettings";
-
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// This is a wrapper to protect routes that require a user to be logged in.
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user } = useAuth();
   if (!user) {
-    // If no user, redirect to the login page.
     return <Navigate to="/auth" replace />;
   }
   return children;
 };
 
+const AppRoutes = () => {
+  // const { loading } = useAuth(); // TEMP: Bypassing loading check as instructed
+
+  // if (loading) { // TEMP: Bypassing loading check as instructed
+  //   return (
+  //     <div className="fixed inset-0 flex items-center justify-center bg-background">
+  //       <Loader2 className="h-10 w-10 animate-spin text-primary" />
+  //     </div>
+  //   );
+  // }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/shop" element={<Shop />} />
+      <Route path="/doctors" element={<Doctors />} />
+      <Route path="/lab-tests" element={<LabTests />} />
+      <Route path="/scan-booking" element={<ScanBooking />} />
+      <Route path="/consult" element={<Consult />} />
+
+      <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+      <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+      <Route path="/upload-prescription" element={<ProtectedRoute><UploadPrescription /></ProtectedRoute>} />
+
+      <Route path="/doctor/dashboard" element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>} />
+
+      <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+        <Route index element={<AdminDashboard />} />
+        <Route path="orders" element={<AdminOrders />} />
+        <Route path="products" element={<AdminProducts />} />
+        <Route path="doctors" element={<AdminDoctors />} />
+        <Route path="lab-tests" element={<AdminLabTests />} />
+        <Route path="scans" element={<AdminScans />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="advertisements" element={<AdminAdvertisements />} />
+        <Route path="wholesale" element={<AdminWholesale />} />
+        <Route path="settings" element={<AdminSettings />} />
+      </Route>
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    {/* CORRECTED: BrowserRouter now wraps AuthProvider */}
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <Routes>
-              {/* Public Routes - Anyone can access these */}
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/shop" element={<Shop />} />
-              <Route path="/doctors" element={<Doctors />} />
-              <Route path="/lab-tests" element={<LabTests />} />
-              <Route path="/scan-booking" element={<ScanBooking />} />
-              <Route path="/consult" element={<Consult />} />
-
-              {/* Protected Routes - Only logged-in users can access */}
-              <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-              <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-              <Route path="/upload-prescription" element={<ProtectedRoute><UploadPrescription /></ProtectedRoute>} />
-
-              {/* Role-Specific Protected Routes */}
-              <Route path="/doctor/dashboard" element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="orders" element={<AdminOrders />} />
-                <Route path="products" element={<AdminProducts />} />
-                <Route path="doctors" element={<AdminDoctors />} />
-                <Route path="lab-tests" element={<AdminLabTests />} />
-                <Route path="scans" element={<AdminScans />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="advertisements" element={<AdminAdvertisements />} />
-                <Route path="wholesale" element={<AdminWholesale />} />
-                <Route path="settings" element={<AdminSettings />} />
-              </Route>
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AppRoutes />
           </TooltipProvider>
         </CartProvider>
       </AuthProvider>

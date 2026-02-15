@@ -4,8 +4,8 @@ import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { 
-  LayoutDashboard, Package, Users, Stethoscope, TestTube, 
+import {
+  LayoutDashboard, Package, Users, Stethoscope, TestTube,
   Scan, ShoppingCart, Settings, LogOut, Menu,
   Bell, Search, Megaphone, Store, X
 } from "lucide-react";
