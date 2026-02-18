@@ -62,7 +62,7 @@ const AdminProducts = () => {
         .from("medicines")
         .select("*")
         .order("name");
-      
+
       if (error) throw error;
       return data;
     },
@@ -152,7 +152,7 @@ const AdminProducts = () => {
   };
 
   const filteredProducts = products.filter((product: any) => {
-    const matchesSearch = 
+    const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.generic_name?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -242,8 +242,8 @@ const AdminProducts = () => {
                 <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
               </div>
               <div className="col-span-2 flex items-center gap-2">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={formData.requires_prescription}
                   onChange={(e) => setFormData({ ...formData, requires_prescription: e.target.checked })}
                 />
@@ -346,9 +346,9 @@ const AdminProducts = () => {
                           <Button variant="ghost" size="sm" onClick={() => openEdit(product)}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="text-destructive"
                             onClick={() => deleteProduct.mutate(product.id)}
                           >

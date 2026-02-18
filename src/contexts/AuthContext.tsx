@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  loading: boolean; // Keep loading state for the wrapper
+  loading: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -18,22 +18,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get the initial session. This will be null if the user is not logged in.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false); // <--- CRITICAL: We are now done with the initial load.
-    });
+    const getInitialSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.error("Error fetching initial session:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Listen for future changes, like login or logout
+    getInitialSession();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      // Loading is already false, so we don't need to set it again here.
     });
 
-    // Cleanup the listener when the component is unmounted
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
@@ -42,7 +48,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = { user, session, loading, signOut };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // CRITICAL FIX: Do not render the rest of the app until the initial auth check is complete.
+  // This prevents the race condition.
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {

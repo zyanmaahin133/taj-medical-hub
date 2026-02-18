@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Mail, Lock, User, Phone, Store, ArrowLeft } from "lucide-react";
 import logo from "@/assets/logo.jpeg";
 
-// Zod Schemas
 const loginSchema = z.object({ email: z.string().trim().email(), password: z.string().min(6) });
 const signupSchema = z.object({ fullName: z.string().trim().min(2), email: z.string().trim().email(), phone: z.string().trim().min(10), password: z.string().min(6), accountType: z.enum(["customer", "wholesale", "doctor"]) });
 const resetSchema = z.object({ email: z.string().trim().email() });
@@ -25,40 +24,62 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showNewPasswordForm, setShowNewPasswordForm] = useState(false);
-
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [signupData, setSignupData] = useState({ fullName: "", email: "", phone: "", password: "", accountType: "customer" as "customer" | "wholesale" | "doctor" });
   const [newPasswordData, setNewPasswordData] = useState({ password: "", confirmPassword: "" });
   const [resetEmail, setResetEmail] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
+    useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get("reset") === "true") {
-      supabase.auth.onAuthStateChange((event) => {
-        if (event === 'PASSWORD_RECOVERY') {
-          setShowNewPasswordForm(true);
-        }
-      });
+    if (params.get('reset') === 'true') {
+        supabase.auth.onAuthStateChange(async (event) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                setShowNewPasswordForm(true);
+            }
+        });
     }
   }, [location]);
 
   const redirectBasedOnRole = async (userId: string) => {
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId).single();
-    const role = data?.role;
-    if (role === "admin") navigate("/admin");
-    else if (role === "doctor") navigate("/doctor/dashboard");
-    else if (role === "wholesale") navigate("/wholesale");
-    else navigate("/dashboard");
+    try {
+      // CORRECTED: Fetch a list of roles, do NOT use .single()
+      const { data: roles, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      // Check if the user has the 'admin' role in their list of roles.
+      const isAdmin = roles && roles.some(r => r.role === 'admin');
+
+      if (isAdmin) {
+        navigate("/admin");
+      } else {
+        // Handle other roles or default to customer dashboard
+        const isDoctor = roles && roles.some(r => r.role === 'doctor');
+        const isWholesale = roles && roles.some(r => r.role === 'wholesale');
+        if (isDoctor) navigate("/doctor/dashboard");
+        else if (isWholesale) navigate("/wholesale");
+        else navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Error checking user role, redirecting to default dashboard:", error);
+      navigate("/dashboard"); // Fallback on any error
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword(loginData);
-    if (error) toast.error(error.message);
-    else if (data.user) redirectBasedOnRole(data.user.id);
-    setIsLoading(false);
+    if (error) {
+        toast.error(error.message);
+        setIsLoading(false);
+    } else if (data.user) {
+        redirectBasedOnRole(data.user.id);
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -66,7 +87,7 @@ const Auth = () => {
     setIsLoading(true);
     const { error } = await supabase.auth.signUp({ email: signupData.email, password: signupData.password, options: { data: { full_name: signupData.fullName, phone: signupData.phone, account_type: signupData.accountType } } });
     if (error) toast.error(error.message);
-    else toast.success("Check your email to verify your account!");
+    else toast.success("Account created! Please check your email to verify.");
     setIsLoading(false);
   };
 
