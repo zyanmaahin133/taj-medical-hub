@@ -7,12 +7,25 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 
-// Import Pages & Layouts
+// Layouts and Public Pages
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AdminLayout from "./layouts/AdminLayout";
-// ... other imports
+
+// Import all Admin Pages
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminDoctors from "./pages/admin/AdminDoctors";
+import AdminLabTests from "./pages/admin/AdminLabTests";
+import AdminScans from "./pages/admin/AdminScans";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminWholesale from "./pages/admin/AdminWholesale";
+import AdminAdvertisements from "./pages/admin/AdminAdvertisements";
+import AdminSettings from "./pages/admin/AdminSettings";
+
+// ... other page imports ...
 
 const queryClient = new QueryClient();
 
@@ -31,21 +44,24 @@ const App = () => (
 
               {/* === Protected Routes === */}
               <Route element={<ProtectedRoute />}>
-                {/* User Routes */}
-                <Route path="/dashboard" element={<div>User Dashboard</div>} />
-                <Route path="/profile" element={<div>User Profile</div>} />
-                {/* Doctor Routes */}
-                <Route path="/doctor/dashboard" element={<div>Doctor Dashboard</div>} />
-                {/* Admin Routes */}
+                {/* ... User and Doctor routes ... */}
+
+                {/* === Admin Routes (Corrected) === */}
                 <Route path="/admin" element={<AdminLayout />}>
-                  <Route index element={<div>Admin Dashboard</div>} />
-                  <Route path="products" element={<div>Admin Products</div>} />
-                  {/* ... all other admin routes */}
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="orders" element={<AdminOrders />} />
+                  <Route path="products" element={<AdminProducts />} />
+                  <Route path="doctors" element={<AdminDoctors />} />
+                  <Route path="lab-tests" element={<AdminLabTests />} />
+                  <Route path="scans" element={<AdminScans />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="wholesale" element={<AdminWholesale />} />
+                  <Route path="advertisements" element={<AdminAdvertisements />} />
+                  <Route path="settings" element={<AdminSettings />} />
                 </Route>
               </Route>
 
-              {/* Not Found Route */}
-              <Route path="*" element={<div>404 Not Found</div>} />
+              {/* ... other routes ... */}
             </Routes>
           </TooltipProvider>
         </CartProvider>
