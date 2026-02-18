@@ -14,8 +14,6 @@ import logo from "@/assets/logo.jpeg";
 
 const loginSchema = z.object({ email: z.string().trim().email(), password: z.string().min(6) });
 const signupSchema = z.object({ fullName: z.string().trim().min(2), email: z.string().trim().email(), phone: z.string().trim().min(10), password: z.string().min(6), accountType: z.enum(["customer", "wholesale", "doctor"]) });
-const resetSchema = z.object({ email: z.string().trim().email() });
-const newPasswordSchema = z.object({ password: z.string().min(6), confirmPassword: z.string().min(6) }).refine(data => data.password === data.confirmPassword, { message: "Passwords do not match", path: ["confirmPassword"] });
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -28,36 +26,26 @@ const Auth = () => {
   const [signupData, setSignupData] = useState({ fullName: "", email: "", phone: "", password: "", accountType: "customer" as "customer" | "wholesale" | "doctor" });
   const [newPasswordData, setNewPasswordData] = useState({ password: "", confirmPassword: "" });
   const [resetEmail, setResetEmail] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-    useEffect(() => {
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('reset') === 'true') {
-        supabase.auth.onAuthStateChange(async (event) => {
-            if (event === 'PASSWORD_RECOVERY') {
-                setShowNewPasswordForm(true);
-            }
-        });
+    if (params.get("type") === "recovery") {
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setShowNewPasswordForm(true);
+        }
+      });
     }
   }, [location]);
 
   const redirectBasedOnRole = async (userId: string) => {
     try {
-      // CORRECTED: Fetch a list of roles, do NOT use .single()
-      const { data: roles, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-
+      const { data: roles, error } = await supabase.from('user_roles').select('role').eq('user_id', userId);
       if (error) throw error;
-
-      // Check if the user has the 'admin' role in their list of roles.
       const isAdmin = roles && roles.some(r => r.role === 'admin');
-
       if (isAdmin) {
         navigate("/admin");
       } else {
-        // Handle other roles or default to customer dashboard
         const isDoctor = roles && roles.some(r => r.role === 'doctor');
         const isWholesale = roles && roles.some(r => r.role === 'wholesale');
         if (isDoctor) navigate("/doctor/dashboard");
@@ -65,8 +53,8 @@ const Auth = () => {
         else navigate("/dashboard");
       }
     } catch (error) {
-      console.error("Error checking user role, redirecting to default dashboard:", error);
-      navigate("/dashboard"); // Fallback on any error
+      console.error("Error during role-based redirection:", error);
+      navigate("/dashboard");
     }
   };
 
@@ -75,26 +63,56 @@ const Auth = () => {
     setIsLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword(loginData);
     if (error) {
-        toast.error(error.message);
-        setIsLoading(false);
-    } else if (data.user) {
-        redirectBasedOnRole(data.user.id);
+      toast.error(error.message);
+      setIsLoading(false);
+      return;
     }
+    if (data.user) {
+      await redirectBasedOnRole(data.user.id);
+    }
+    setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const { error } = await supabase.auth.signUp({ email: signupData.email, password: signupData.password, options: { data: { full_name: signupData.fullName, phone: signupData.phone, account_type: signupData.accountType } } });
-    if (error) toast.error(error.message);
-    else toast.success("Account created! Please check your email to verify.");
+    const { data, error } = await supabase.auth.signUp({
+      email: signupData.email,
+      password: signupData.password,
+      options: {
+        data: {
+          full_name: signupData.fullName,
+          phone: signupData.phone,
+          account_type: signupData.accountType,
+        },
+      },
+    });
+    if (error) {
+      toast.error(error.message);
+      setIsLoading(false);
+      return;
+    }
+    if (data.user) {
+      const { error: roleError } = await supabase.from("user_roles").insert({
+        user_id: data.user.id,
+        role: signupData.accountType === "doctor"
+          ? "doctor"
+          : signupData.accountType === "wholesale"
+          ? "wholesale"
+          : "user",
+      });
+      if(roleError) {
+        toast.error("Could not assign role on signup. Contact support.")
+      }
+    }
+    toast.success("Account created! Please check your email to verify.");
     setIsLoading(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, { redirectTo: `${window.location.origin}/auth?reset=true` });
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, { redirectTo: `${window.location.origin}/auth` });
     if (error) toast.error(error.message);
     else toast.success("Password reset link sent!");
     setIsLoading(false);
@@ -160,7 +178,7 @@ const Auth = () => {
                 <Input placeholder="Full Name" value={signupData.fullName} onChange={e => setSignupData({...signupData, fullName: e.target.value})} required/>
                 <Input type="email" placeholder="Email" value={signupData.email} onChange={e => setSignupData({...signupData, email: e.target.value})} required/>
                 <Input placeholder="Phone" value={signupData.phone} onChange={e => setSignupData({...signupData, phone: e.target.value})} required/>
-                <Input type="password" placeholder="Password" value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} required/>
+                <Input type="password" placeholder="Password" value={signupData.password} onChange={e => setSignupData({...signupData, password: e.g.et.value})} required/>
                 <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? "Creating Account..." : "Sign Up"}</Button>
               </form>
             </TabsContent>
