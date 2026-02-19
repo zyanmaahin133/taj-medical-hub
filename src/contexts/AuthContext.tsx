@@ -46,13 +46,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signOut();
   };
 
-  const value = { user, session, loading, signOut };
-
-  // CRITICAL FIX: Do not render the rest of the app until the initial auth check is complete.
-  // This prevents the race condition.
   return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
+    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+      {children}
     </AuthContext.Provider>
   );
 };
