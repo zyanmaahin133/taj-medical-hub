@@ -1,94 +1,102 @@
 
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminSettings = () => {
+  const queryClient = useQueryClient();
+
+  // Fetch settings from the database
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["admin-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("admin_settings").select("*").single();
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows found, which is fine on first load
+      return data || {};
+    },
+  });
+
+  // State to manage local form changes
+  const [localSettings, setLocalSettings] = useState(null);
+
+  // Update local state when settings are fetched
+  useState(() => {
+    if (settings) {
+      setLocalSettings(settings);
+    }
+  }, [settings]);
+
+  // Mutation to update settings
+  const { mutate: updateSettings, isLoading: isSaving } = useMutation({
+    mutationFn: async (newSettings) => {
+      // Use upsert with a fixed ID (e.g., 1) for the single settings row
+      const { error } = await supabase.from("admin_settings").upsert({ id: 1, ...newSettings });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Settings saved successfully!");
+      queryClient.invalidateQueries(["admin-settings"]);
+    },
+    onError: (error) => {
+      toast.error(`Error saving settings: ${error.message}`);
+    },
+  });
+
+  const handleSave = () => {
+    updateSettings(localSettings);
+  };
+
+  if (isLoading || !localSettings) return <div>Loading settings...</div>;
+
+  const handleInputChange = (key, value) => {
+    setLocalSettings(prev => ({ ...prev, [key]: value }));
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your store settings and preferences.</p>
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">Manage your store settings, integrations, and preferences.</p>
       </div>
 
-      <Separator />
+      <Card>
+        <CardHeader><CardTitle>General Settings</CardTitle><CardDescription>Basic information about your store.</CardDescription></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Store Name</Label>
+            <Input value={localSettings.store_name || ""} onChange={e => handleInputChange("store_name", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Support Email</Label>
+            <Input type="email" value={localSettings.support_email || ""} onChange={e => handleInputChange("support_email", e.target.value)} />
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid md:grid-cols-3 gap-8">
-        <div className="md:col-span-1">
-          <h2 className="font-semibold">General Settings</h2>
-          <p className="text-sm text-muted-foreground">Basic information about your store.</p>
-        </div>
-        <div className="md:col-span-2">
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="store-name">Store Name</Label>
-                <Input id="store-name" defaultValue="Taj Medical Store" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="store-email">Support Email</Label>
-                <Input id="store-email" type="email" defaultValue="support@tajmedical.com" />
-              </div>
-              <Button>Save Changes</Button>
-            </CardContent>
-          </Card>
-        </div>
+      <Card>
+        <CardHeader><CardTitle>Payment Gateway</CardTitle><CardDescription>Connect your Razorpay account.</CardDescription></CardHeader>
+        <CardContent className="space-y-4">
+           <div className="space-y-2">
+            <Label>Razorpay Key ID</Label>
+            <Input placeholder="rzp_live_..." value={localSettings.razorpay_key_id || ""} onChange={e => handleInputChange("razorpay_key_id", e.target.value)}/>
+          </div>
+          <div className="space-y-2">
+            <Label>Razorpay Key Secret</Label>
+            <Input type="password" placeholder="••••••••••••••••" value={localSettings.razorpay_key_secret || ""} onChange={e => handleInputChange("razorpay_key_secret", e.target.value)}/>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={isSaving}>{isSaving ? "Saving..." : "Save All Settings"}</Button>
       </div>
-
-      <Separator />
-
-      <div className="grid md:grid-cols-3 gap-8">
-        <div className="md:col-span-1">
-          <h2 className="font-semibold">Appearance</h2>
-          <p className="text-sm text-muted-foreground">Customize the look and feel of your store.</p>
-        </div>
-        <div className="md:col-span-2">
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="dark-mode">Enable Dark Mode</Label>
-                  <p className="text-xs text-muted-foreground">Allow users to switch to a dark theme.</p>
-                </div>
-                <Switch id="dark-mode" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="theme-color">Primary Theme Color</Label>
-                <Input id="theme-color" type="color" defaultValue="#2563eb" className="w-24" />
-              </div>
-              <Button>Save Changes</Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div className="grid md:grid-cols-3 gap-8">
-        <div className="md:col-span-1">
-          <h2 className="font-semibold">Integrations</h2>
-          <p className="text-sm text-muted-foreground">Connect with third-party services.</p>
-        </div>
-        <div className="md:col-span-2">
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="google-analytics">Google Analytics ID</Label>
-                <Input id="google-analytics" placeholder="UA-12345678-9" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="facebook-pixel">Facebook Pixel ID</Label>
-                <Input id="facebook-pixel" placeholder="1234567890123456" />
-              </div>
-              <Button>Save Integrations</Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
     </div>
   );
 };

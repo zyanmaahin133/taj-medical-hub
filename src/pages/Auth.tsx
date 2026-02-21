@@ -27,16 +27,30 @@ const Auth = () => {
   const [newPasswordData, setNewPasswordData] = useState({ password: "", confirmPassword: "" });
   const [resetEmail, setResetEmail] = useState("");
 
+  // ✅ CORRECTED useEffect FOR PASSWORD RECOVERY
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get("type") === "recovery") {
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setShowNewPasswordForm(true);
-        }
-      });
-    }
-  }, [location]);
+    const handleRecovery = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Error getting session for recovery:", error);
+        return;
+      }
+      // This is a bit of a workaround. The PASSWORD_RECOVERY event is the most reliable.
+      // getSession() might exist for a normal user too. The event is key.
+    };
+
+    handleRecovery();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setShowNewPasswordForm(true);
+      }
+    });
+
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
 
   const redirectBasedOnRole = async (userId: string) => {
     try {
@@ -119,14 +133,25 @@ const Auth = () => {
     setShowForgotPassword(false);
   };
 
+  // ✅ CORRECTED handleSetNewPassword WITH VALIDATION
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    if (newPasswordData.password !== newPasswordData.confirmPassword) {
+      toast.error("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ password: newPasswordData.password });
-    if (error) toast.error(error.message);
-    else toast.success("Password updated successfully!");
-    setShowNewPasswordForm(false);
-    navigate("/auth", { replace: true });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password updated successfully!");
+      setShowNewPasswordForm(false);
+      navigate("/auth", { replace: true });
+    }
     setIsLoading(false);
   };
 

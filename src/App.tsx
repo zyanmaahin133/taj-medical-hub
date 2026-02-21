@@ -9,10 +9,12 @@ import { CartProvider } from "@/contexts/CartContext";
 import { Loader2 } from "lucide-react";
 
 // Import All Pages & Layouts
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./layouts/AdminLayout";
+import UserDashboardLayout from "./layouts/UserDashboardLayout";
 import Shop from "./pages/Shop";
 import Doctors from "./pages/Doctors";
 import LabTests from "./pages/LabTests";
@@ -21,9 +23,12 @@ import Contact from "./pages/Contact";
 import Consult from "./pages/Consult";
 import UserDashboard from "./pages/UserDashboard";
 import Profile from "./pages/Profile";
+import UserOrders from "./pages/UserOrders";
+import UserPrescriptions from "./pages/UserPrescriptions";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import UploadPrescription from "./pages/UploadPrescription";
+import UserSettings from "./pages/UserSettings";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminProducts from "./pages/admin/AdminProducts";
@@ -37,13 +42,6 @@ import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/auth" replace />;
-  return children;
-};
-
-// This new component handles the loading state before rendering routes
 const AppRoutes = () => {
   const { loading } = useAuth();
 
@@ -57,6 +55,7 @@ const AppRoutes = () => {
 
   return (
     <Routes>
+      {/* === Public Routes === */}
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/shop" element={<Shop />} />
@@ -66,23 +65,35 @@ const AppRoutes = () => {
       <Route path="/contact" element={<Contact />} />
       <Route path="/consult" element={<Consult />} />
 
-      <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-      <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-      <Route path="/upload-prescription" element={<ProtectedRoute><UploadPrescription /></ProtectedRoute>} />
+      {/* === Protected Routes === */}
+      <Route element={<ProtectedRoute />}>
+        {/* User Dashboard Layout */}
+        <Route element={<UserDashboardLayout />}>
+          <Route path="/dashboard" element={<UserDashboard />} />
+          <Route path="/orders" element={<UserOrders />} />
+          <Route path="/prescriptions" element={<UserPrescriptions />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<UserSettings />} />
+        </Route>
 
-      <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="orders" element={<AdminOrders />} />
-        <Route path="products" element={<AdminProducts />} />
-        <Route path="doctors" element={<AdminDoctors />} />
-        <Route path="lab-tests" element={<AdminLabTests />} />
-        <Route path="scans" element={<AdminScans />} />
-        <Route path="users" element={<AdminUsers />} />
-        <Route path="wholesale" element={<AdminWholesale />} />
-        <Route path="advertisements" element={<AdminAdvertisements />} />
-        <Route path="settings" element={<AdminSettings />} />
+        {/* Other protected routes without the dashboard layout */}
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/upload-prescription" element={<UploadPrescription />} />
+
+        {/* === Admin Routes === */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="doctors" element={<AdminDoctors />} />
+          <Route path="lab-tests" element={<AdminLabTests />} />
+          <Route path="scans" element={<AdminScans />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="wholesale" element={<AdminWholesale />} />
+          <Route path="advertisements" element={<AdminAdvertisements />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFound />} />
