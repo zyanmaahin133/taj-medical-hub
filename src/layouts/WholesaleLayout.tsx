@@ -3,24 +3,23 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { LayoutDashboard, ShoppingCart, FileText, User, Settings, LogOut, PanelLeft } from "lucide-react";
+import { Building, Package, FileText, User, Settings, LogOut, PanelLeft } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const userNavLinks = [
-  { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-  { name: "My Orders", path: "/orders", icon: ShoppingCart },
-  { name: "My Prescriptions", path: "/prescriptions", icon: FileText },
-  { name: "My Profile", path: "/profile", icon: User },
-  { name: "Settings", path: "/settings", icon: Settings },
+const wholesaleNavLinks = [
+  { name: "Dashboard", path: "/wholesale/dashboard", icon: Building },
+  { name: "Products", path: "/wholesale/products", icon: Package },
+  { name: "Quote Requests", path: "/wholesale/quotes", icon: FileText },
+  { name: "My Profile", path: "/wholesale/profile", icon: User },
 ];
 
-const UserLayout = () => {
+const WholesaleLayout = () => {
   const { user, signOut } = useAuth();
   const location = useLocation();
 
   const NavLinks = ({ isMobile = false }) => (
     <nav className={`flex flex-col p-2 space-y-1 ${isMobile ? 'text-lg' : 'text-sm'}`}>
-      {userNavLinks.map(nav => (
+      {wholesaleNavLinks.map(nav => (
         <Link key={nav.path} to={nav.path} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all hover:bg-muted ${location.pathname === nav.path ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'text-muted-foreground'}`}>
           <nav.icon className="h-4 w-4" />
           {nav.name}
@@ -36,7 +35,7 @@ const UserLayout = () => {
         <div className="p-4 border-b h-20 flex items-center gap-4">
           <Avatar className="h-12 w-12"><AvatarImage src={user?.user_metadata?.avatar_url} /><AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
           <div>
-            <p className="font-semibold text-sm">{user?.user_metadata?.full_name || "Valued Customer"}</p>
+            <p className="font-semibold text-sm">{user?.user_metadata?.business_name || "Wholesale"}</p>
             <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
         </div>
@@ -57,7 +56,7 @@ const UserLayout = () => {
               <NavLinks isMobile />
             </SheetContent>
           </Sheet>
-          <h2 className="font-bold text-lg">{userNavLinks.find(l => l.path === location.pathname)?.name || "Menu"}</h2>
+          <h2 className="font-bold text-lg">{wholesaleNavLinks.find(l => l.path === location.pathname)?.name || "Menu"}</h2>
         </header>
 
         <main className="flex-1 p-4 sm:p-6">
@@ -68,4 +67,4 @@ const UserLayout = () => {
   );
 };
 
-export default UserLayout;
+export default WholesaleLayout;

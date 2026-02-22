@@ -8,30 +8,29 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Briefcase } from "lucide-react";
 
-const businessSchema = z.object({ /* ... */ });
+const doctorSchema = z.object({ /* your schema is correct */ });
 
-// ✅ RENAMED to WholesaleRegisterForm to reflect its new purpose
-const WholesaleRegisterForm = () => {
+// ✅ RENAMED to DoctorRegisterForm to reflect its new purpose
+const DoctorRegisterForm = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({ /* ... */ });
+  const [formData, setFormData] = useState({ /* your form data is correct */ });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const { error: profileError } = await supabase.from("wholesale_profiles").upsert({ user_id: user.id, ...formData }, { onConflict: "user_id" });
+      const { error: profileError } = await supabase.from("doctor_profiles").upsert({ user_id: user.id, ...formData }, { onConflict: "user_id" });
       if (profileError) throw profileError;
-      const { error: roleError } = await supabase.from("user_roles").upsert({ user_id: user.id, role: "wholesale" }, { onConflict: "user_id" });
+      const { error: roleError } = await supabase.from("user_roles").upsert({ user_id: user.id, role: "doctor" }, { onConflict: "user_id" });
       if (roleError) throw roleError;
-      toast.success("Wholesale registration submitted!");
-      await queryClient.invalidateQueries({ queryKey: ["wholesale-profile", user.id] });
+      toast.success("Doctor registration submitted!");
+      await queryClient.invalidateQueries({ queryKey: ["doctor-profile", user.id] });
       await queryClient.invalidateQueries({ queryKey: ["user-role", user.id] });
     } catch (error) {
       toast.error("Registration failed.");
@@ -41,18 +40,17 @@ const WholesaleRegisterForm = () => {
   };
 
   // ✅ THE FIX: The component now returns ONLY the form card, not a full page layout.
-  // This prevents the mobile view bug.
   return (
     <Card className="w-full max-w-xl mx-auto">
       <CardHeader>
-        <CardTitle>Wholesale Registration</CardTitle>
-        <CardDescription>Register your business for wholesale access</CardDescription>
+        <CardTitle className="flex items-center gap-2"><Briefcase/> Doctor Registration</CardTitle>
+        <CardDescription>Submit your professional details for verification.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* ... all your form inputs from the original file ... */}
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit Registration"}
+            {isSubmitting ? "Submitting..." : "Submit for Verification"}
           </Button>
         </form>
       </CardContent>
@@ -60,4 +58,4 @@ const WholesaleRegisterForm = () => {
   );
 };
 
-export default WholesaleRegisterForm;
+export default DoctorRegisterForm;

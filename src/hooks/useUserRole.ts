@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -6,46 +7,35 @@ export type UserRole = "admin" | "doctor" | "pharmacy" | "lab" | "scan_center" |
 
 export const useUserRole = () => {
   const { user } = useAuth();
-  const [role, setRole] = useState<UserRole | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isWholesale, setIsWholesale] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchRole = async () => {
-      if (!user) {
-        setRole(null);
-        setIsAdmin(false);
-        setIsWholesale(false);
-        setLoading(false);
-        return;
+  const { data, isLoading: loading, isError } = useQuery<UserRole | null>({
+    queryKey: ["user-role", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error fetching user role:", error);
+        throw error; // Let react-query handle the error state
       }
 
-      try {
-        const { data, error } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .single();
+      return data?.role as UserRole || "user";
+    },
+    enabled: !!user, // Only run the query if the user is logged in
+    staleTime: 1000 * 60 * 5, // Cache the role for 5 minutes
+  });
 
-        if (error && error.code !== "PGRST116") {
-          console.error("Error fetching role:", error);
-        }
-
-        const userRole = (data?.role as UserRole) || "user";
-        setRole(userRole);
-        setIsAdmin(userRole === "admin");
-        setIsWholesale(userRole === "wholesale");
-      } catch (error) {
-        console.error("Error:", error);
-        setRole("user");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRole();
-  }, [user]);
-
-  return { role, isAdmin, isWholesale, loading };
+  return {
+    role: data,
+    isAdmin: data === "admin",
+    isWholesale: data === "wholesale",
+    isDoctor: data === "doctor",
+    loading,
+    isError,
+  };
 };

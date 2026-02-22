@@ -1,34 +1,50 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { Loader2 } from "lucide-react";
 
-// Import All Pages & Layouts
 import ProtectedRoute from "@/components/ProtectedRoute";
+
+// Public Pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import AdminLayout from "./layouts/AdminLayout";
-import UserLayout from "./layouts/UserLayout"; // Import the new layout
 import Shop from "./pages/Shop";
 import Doctors from "./pages/Doctors";
 import LabTests from "./pages/LabTests";
 import ScanBooking from "./pages/ScanBooking";
 import Contact from "./pages/Contact";
 import Consult from "./pages/Consult";
+
+// Layouts
+import AdminLayout from "./layouts/AdminLayout";
+import UserLayout from "./layouts/UserLayout";
+import DoctorLayout from "./layouts/DoctorLayout";
+import WholesaleLayout from "./layouts/WholesaleLayout";
+
+// User Pages
 import UserDashboard from "./pages/UserDashboard";
 import Profile from "./pages/Profile";
 import UserOrders from "./pages/UserOrders";
 import UserPrescriptions from "./pages/UserPrescriptions";
+import UserSettings from "./pages/UserSettings";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import UploadPrescription from "./pages/UploadPrescription";
-import UserSettings from "./pages/UserSettings";
+
+// Doctor
+import DoctorDashboard from "./pages/doctor/DoctorDashboard";
+import DoctorRegister from "./pages/doctor/DoctorRegister";
+
+// Wholesale
+import WholesaleDashboard from "./pages/wholesale/WholesaleDashboard";
+import WholesaleRegister from "./pages/wholesale/WholesaleRegister";
+
+// Admin
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminProducts from "./pages/admin/AdminProducts";
@@ -39,19 +55,32 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminWholesale from "./pages/admin/AdminWholesale";
 import AdminAdvertisements from "./pages/admin/AdminAdvertisements";
 import AdminSettings from "./pages/admin/AdminSettings";
-import WholesaleDashboard from "./pages/wholesale/WholesaleDashboard";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5,
+    },
+  },
+});
 
 const AppRoutes = () => {
   const { loading } = useAuth();
+
   if (loading) {
-    return <div className="fixed inset-0 flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin" /></div>;
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
     <Routes>
-      {/* === Public Routes === */}
+
+      {/* ================= PUBLIC ================= */}
       <Route path="/" element={<Index />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/shop" element={<Shop />} />
@@ -61,25 +90,38 @@ const AppRoutes = () => {
       <Route path="/contact" element={<Contact />} />
       <Route path="/consult" element={<Consult />} />
 
-      {/* === Protected Routes === */}
+      {/* ================= PROTECTED ================= */}
       <Route element={<ProtectedRoute />}>
 
-        {/* User & Wholesale Dashboard Layout */}
+        {/* Standalone Register Pages */}
+        <Route path="/doctor/register" element={<DoctorRegister />} />
+        <Route path="/wholesale/register" element={<WholesaleRegister />} />
+
+        {/* USER PANEL */}
         <Route element={<UserLayout />}>
           <Route path="/dashboard" element={<UserDashboard />} />
-          <Route path="/wholesale" element={<WholesaleDashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<UserSettings />} />
           <Route path="/orders" element={<UserOrders />} />
           <Route path="/prescriptions" element={<UserPrescriptions />} />
         </Route>
 
-        {/* Other protected routes that don't use the sidebar layout */}
+        {/* DOCTOR PANEL */}
+        <Route element={<DoctorLayout />}>
+          <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+        </Route>
+
+        {/* WHOLESALE PANEL */}
+        <Route element={<WholesaleLayout />}>
+          <Route path="/wholesale/dashboard" element={<WholesaleDashboard />} />
+        </Route>
+
+        {/* Cart */}
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/upload-prescription" element={<UploadPrescription />} />
 
-        {/* === Admin Routes (UNCHANGED) === */}
+        {/* ADMIN PANEL */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="orders" element={<AdminOrders />} />
@@ -92,12 +134,15 @@ const AppRoutes = () => {
           <Route path="advertisements" element={<AdminAdvertisements />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
+
       </Route>
 
+      {/* 404 */}
       <Route path="*" element={<NotFound />} />
+
     </Routes>
   );
-}
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
