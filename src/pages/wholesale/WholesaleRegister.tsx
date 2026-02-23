@@ -1,7 +1,5 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,47 +11,51 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-const businessSchema = z.object({ /* ... */ });
-
-// ✅ RENAMED to WholesaleRegisterForm to reflect its new purpose
 const WholesaleRegisterForm = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({ /* ... */ });
+  const [formData, setFormData] = useState({ business_name: "", owner_name: "", phone: "", address: "", gst_number: "" });
 
+  const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.id]: e.target.value }));
+
+  // ✅ YOUR FIX: Using .upsert() with onConflict
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const { error: profileError } = await supabase.from("wholesale_profiles").upsert({ user_id: user.id, ...formData }, { onConflict: "user_id" });
-      if (profileError) throw profileError;
-      const { error: roleError } = await supabase.from("user_roles").upsert({ user_id: user.id, role: "wholesale" }, { onConflict: "user_id" });
-      if (roleError) throw roleError;
-      toast.success("Wholesale registration submitted!");
-      await queryClient.invalidateQueries({ queryKey: ["wholesale-profile", user.id] });
-      await queryClient.invalidateQueries({ queryKey: ["user-role", user.id] });
+      const { error } = await supabase.from('wholesale_profiles').upsert(
+        { user_id: user.id, ...formData, status: 'pending' },
+        { onConflict: 'user_id' }
+      );
+      if (error) throw error;
+
+      await supabase.from('user_roles').upsert({ user_id: user.id, role: 'wholesale' }, { onConflict: 'user_id' });
+
+      toast.success("Registration submitted for review!");
+      queryClient.invalidateQueries(['wholesale-profile', user.id]);
+      queryClient.invalidateQueries(['user-role', user.id]);
+
     } catch (error) {
-      toast.error("Registration failed.");
+      toast.error(error.message || "Submission failed.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ✅ THE FIX: The component now returns ONLY the form card, not a full page layout.
-  // This prevents the mobile view bug.
   return (
-    <Card className="w-full max-w-xl mx-auto">
-      <CardHeader>
-        <CardTitle>Wholesale Registration</CardTitle>
-        <CardDescription>Register your business for wholesale access</CardDescription>
-      </CardHeader>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader><CardTitle>Wholesale Registration</CardTitle><CardDescription>Register your business to access wholesale pricing.</CardDescription></CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* ... all your form inputs from the original file ... */}
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit Registration"}
-          </Button>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1"><Label htmlFor="business_name">Business Name</Label><Input id="business_name" value={formData.business_name} onChange={handleChange} required/></div>
+            <div className="space-y-1"><Label htmlFor="owner_name">Owner Name</Label><Input id="owner_name" value={formData.owner_name} onChange={handleChange} required/></div>
+            <div className="space-y-1"><Label htmlFor="phone">Phone Number</Label><Input id="phone" value={formData.phone} onChange={handleChange} required/></div>
+            <div className="space-y-1"><Label htmlFor="gst_number">GST Number</Label><Input id="gst_number" value={formData.gst_number} onChange={handleChange} /></div>
+          </div>
+          <div className="space-y-1"><Label htmlFor="address">Full Address</Label><Textarea id="address" value={formData.address} onChange={handleChange} required/></div>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Submitting...</> : "Submit for Verification"}</Button>
         </form>
       </CardContent>
     </Card>
