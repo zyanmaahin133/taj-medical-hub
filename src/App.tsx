@@ -40,6 +40,11 @@ import UploadPrescription from "./pages/UploadPrescription";
 // Doctor
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import DoctorRegister from "./pages/doctor/DoctorRegister";
+// ✅ THE FIX: Importing the REAL doctor page components
+import DoctorAppointments from "./pages/doctor/DoctorAppointments";
+import DoctorPatients from "./pages/doctor/DoctorPatients";
+import DoctorProfile from "./pages/doctor/DoctorProfile";
+import DoctorSettings from "./pages/doctor/DoctorSettings";
 
 // Wholesale
 import WholesaleDashboard from "./pages/wholesale/WholesaleDashboard";
@@ -56,9 +61,6 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminWholesale from "./pages/admin/AdminWholesale";
 import AdminAdvertisements from "./pages/admin/AdminAdvertisements";
 import AdminSettings from "./pages/admin/AdminSettings";
-
-// Placeholder components for the fix
-const Placeholder = ({ title }: { title: string }) => <div className="p-4"><h2>{title}</h2><p>This page is under construction.</p></div>;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -114,16 +116,17 @@ const AppRoutes = () => {
         <Route path="/doctor" element={<DoctorLayout />}>
           <Route index element={<Navigate to="/doctor/dashboard" replace />} />
           <Route path="dashboard" element={<DoctorDashboard />} />
+          {/* ✅ THE FIX: Using the REAL components instead of placeholders */}
+          <Route path="appointments" element={<DoctorAppointments />} />
+          <Route path="patients" element={<DoctorPatients />} />
+          <Route path="profile" element={<DoctorProfile />} />
+          <Route path="settings" element={<DoctorSettings />} />
         </Route>
 
         {/* WHOLESALE PANEL */}
         <Route path="/wholesale" element={<WholesaleLayout />}>
           <Route index element={<Navigate to="/wholesale/dashboard" replace />} />
           <Route path="dashboard" element={<WholesaleDashboard />} />
-          {/* ✅ THE FIX: ADDED MISSING WHOLESALE ROUTES */}
-          <Route path="products" element={<Placeholder title="Wholesale Products" />} />
-          <Route path="quotes" element={<Placeholder title="Quote Requests" />} />
-          <Route path="profile" element={<Placeholder title="Wholesale Profile" />} />
         </Route>
 
         {/* Cart */}
