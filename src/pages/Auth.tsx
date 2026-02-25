@@ -13,67 +13,74 @@ const Auth = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ THE FIX: Re-implementing role-based redirection
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     const email = e.currentTarget.email.value;
     const password = e.currentTarget.password.value;
 
-    const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error || !user) {
-      toast.error(error?.message || "Login failed. Please check your credentials.");
+      if (error || !user) {
+        toast.error(error?.message || "Login failed. Please check your credentials.");
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      if (roleError && roleError.code !== 'PGRST116') {
+          toast.error("Could not verify user role. Logging in as customer.");
+          navigate("/", { replace: true });
+      } else {
+          const role = roleData?.role || 'customer';
+          toast.success(`Logged in as ${role.charAt(0).toUpperCase() + role.slice(1)}`);
+          if (role === 'admin') navigate("/admin", { replace: true });
+          else if (role === 'doctor') navigate("/doctor/dashboard", { replace: true });
+          else if (role === 'wholesale') navigate("/wholesale/dashboard", { replace: true });
+          else navigate("/dashboard", { replace: true });
+      }
+    } catch (err: any) {
+      if (err.message === 'Failed to fetch') {
+        toast.error("Network error. Please check your connection.");
+      } else {
+        toast.error(err.message || "An unexpected error occurred.");
+      }
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    // Fetch the user's role from the database
-    const { data: roleData, error: roleError } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-
-    if (roleError && roleError.code !== 'PGRST116') { // PGRST116 means no rows found
-        toast.error("Could not verify user role. Logging in as customer.");
-        navigate("/", { replace: true });
-    } else {
-        const role = roleData?.role || 'customer'; // Default to customer
-        toast.success(`Logged in as ${role.charAt(0).toUpperCase() + role.slice(1)}`);
-        if (role === 'admin') {
-            navigate("/admin", { replace: true });
-        } else if (role === 'doctor') {
-            navigate("/doctor/dashboard", { replace: true });
-        } else if (role === 'wholesale') {
-            navigate("/wholesale/dashboard", { replace: true });
-        } else {
-            navigate("/dashboard", { replace: true });
-        }
-    }
-    setIsLoading(false);
   };
 
-  // Signup logic is correct, no changes needed
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     const { fullName, email, phone, password } = e.currentTarget;
 
-    const { data, error } = await supabase.auth.signUp({
-      email: email.value,
-      password: password.value,
-      options: { data: { full_name: fullName.value, phone: phone.value } },
-    });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.value,
+        password: password.value,
+        options: { data: { full_name: fullName.value, phone: phone.value } },
+      });
 
-    if (error) { toast.error(error.message); setIsLoading(false); return; }
+      if (error) throw error;
 
-    if (data.user) {
-      await supabase.from("user_roles").insert({ user_id: data.user.id, role: "customer" });
-      toast.success("Account created! Please check your email to verify.");
-      navigate("/", { replace: true });
+      // ✅ THE FIX: The database trigger now handles role assignment.
+      // The client-side insert is removed.
+      if (data.user) {
+        toast.success("Account created! Please check your email to verify.");
+        navigate("/", { replace: true });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Signup failed.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (

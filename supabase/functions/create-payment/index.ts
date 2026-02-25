@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
@@ -9,33 +10,32 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
   try {
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
+
     const { items, orderId, deliveryAddress, deliveryPhone } = await req.json();
-    
-    // Get user if authenticated
+
     const authHeader = req.headers.get("Authorization");
     let user = null;
     let customerId = undefined;
-    
+
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
       const { data } = await supabaseClient.auth.getUser(token);
       user = data.user;
     }
 
+    // ✅ THE FIX: Using a real, valid Stripe API version.
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
+      apiVersion: "2024-04-10", // A valid, recent Stripe API version.
     });
 
-    // Check if customer exists
     if (user?.email) {
       const customers = await stripe.customers.list({ email: user.email, limit: 1 });
       if (customers.data.length > 0) {
@@ -43,7 +43,6 @@ serve(async (req) => {
       }
     }
 
-    // Create line items from cart
     const lineItems = items.map((item: any) => ({
       price_data: {
         currency: "inr",
@@ -51,19 +50,18 @@ serve(async (req) => {
           name: item.name,
           images: item.image ? [item.image] : [],
         },
-        unit_amount: Math.round(item.price * 100), // Convert to paise
+        unit_amount: Math.round(item.price * 100),
       },
       quantity: item.quantity,
     }));
 
-    // Add delivery fee
     lineItems.push({
       price_data: {
         currency: "inr",
         product_data: {
           name: "Delivery Fee",
         },
-        unit_amount: 4900, // ₹49
+        unit_amount: 4900, // Assumes a ₹49 delivery fee
       },
       quantity: 1,
     });
@@ -88,9 +86,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    console.error("Payment error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Payment failed";
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

@@ -27,20 +27,19 @@ import UserLayout from "./layouts/UserLayout";
 import DoctorLayout from "./layouts/DoctorLayout";
 import WholesaleLayout from "./layouts/WholesaleLayout";
 
-// User Pages
-import UserDashboard from "./pages/UserDashboard";
-import Profile from "./pages/Profile";
-import UserOrders from "./pages/UserOrders";
-import UserPrescriptions from "./pages/UserPrescriptions";
-import UserSettings from "./pages/UserSettings";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
-import UploadPrescription from "./pages/UploadPrescription";
+// User Pages - ✅ THE FIX: All user-related pages are now in the 'users' folder
+import UserDashboard from "./pages/users/UserDashboard";
+import Profile from "./pages/users/Profile";
+import UserOrders from "./pages/users/UserOrders";
+import UserPrescriptions from "./pages/users/UserPrescriptions";
+import UserSettings from "./pages/users/UserSettings";
+import Cart from "./pages/users/Cart";
+import Checkout from "./pages/users/Checkout";
+import UploadPrescription from "./pages/users/UploadPrescription";
 
 // Doctor
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import DoctorRegister from "./pages/doctor/DoctorRegister";
-// ✅ THE FIX: Importing the REAL doctor page components
 import DoctorAppointments from "./pages/doctor/DoctorAppointments";
 import DoctorPatients from "./pages/doctor/DoctorPatients";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
@@ -85,56 +84,46 @@ const AppRoutes = () => {
 
   return (
     <Routes>
+      <Route path="/" element={<UserLayout />}>
+        <Route index element={<Index />} />
+        <Route path="shop" element={<Shop />} />
+        <Route path="doctors" element={<Doctors />} />
+        <Route path="lab-tests" element={<LabTests />} />
+        <Route path="scan-booking" element={<ScanBooking />} />
+        <Route path="contact" element={<Contact />} />
+        <Route path="consult" element={<Consult />} />
+        <Route path="cart" element={<Cart />} />
+        <Route path="checkout" element={<Checkout />} />
+        <Route path="upload-prescription" element={<UploadPrescription />} />
 
-      {/* ================= PUBLIC ================= */}
-      <Route path="/" element={<Index />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/shop" element={<Shop />} />
-      <Route path="/doctors" element={<Doctors />} />
-      <Route path="/lab-tests" element={<LabTests />} />
-      <Route path="/scan-booking" element={<ScanBooking />} />
-      <Route path="/contact" element={<Contact />} />
-      <Route path="/consult" element={<Consult />} />
-
-      {/* ================= PROTECTED ================= */}
-      <Route element={<ProtectedRoute />}>
-
-        {/* Standalone Register Pages */}
-        <Route path="/doctor/register" element={<DoctorRegister />} />
-        <Route path="/wholesale/register" element={<WholesaleRegister />} />
-
-        {/* USER PANEL */}
-        <Route path="/" element={<UserLayout />}>
+        <Route element={<ProtectedRoute />}>
           <Route path="dashboard" element={<UserDashboard />} />
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<UserSettings />} />
           <Route path="orders" element={<UserOrders />} />
           <Route path="prescriptions" element={<UserPrescriptions />} />
         </Route>
+      </Route>
 
-        {/* DOCTOR PANEL */}
+      <Route path="/auth" element={<Auth />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/doctor/register" element={<DoctorRegister />} />
+        <Route path="/wholesale/register" element={<WholesaleRegister />} />
+
         <Route path="/doctor" element={<DoctorLayout />}>
           <Route index element={<Navigate to="/doctor/dashboard" replace />} />
           <Route path="dashboard" element={<DoctorDashboard />} />
-          {/* ✅ THE FIX: Using the REAL components instead of placeholders */}
           <Route path="appointments" element={<DoctorAppointments />} />
           <Route path="patients" element={<DoctorPatients />} />
           <Route path="profile" element={<DoctorProfile />} />
           <Route path="settings" element={<DoctorSettings />} />
         </Route>
 
-        {/* WHOLESALE PANEL */}
         <Route path="/wholesale" element={<WholesaleLayout />}>
           <Route index element={<Navigate to="/wholesale/dashboard" replace />} />
           <Route path="dashboard" element={<WholesaleDashboard />} />
         </Route>
 
-        {/* Cart */}
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/upload-prescription" element={<UploadPrescription />} />
-
-        {/* ADMIN PANEL */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="orders" element={<AdminOrders />} />
@@ -147,12 +136,9 @@ const AppRoutes = () => {
           <Route path="advertisements" element={<AdminAdvertisements />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
-
       </Route>
 
-      {/* 404 */}
       <Route path="*" element={<NotFound />} />
-
     </Routes>
   );
 };
